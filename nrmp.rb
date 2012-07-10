@@ -1,46 +1,58 @@
 class Match 
-  attr_accessor :candidates, :programs, :c_hassan
 
-  def initialize
+  def initialize(candinfo, proginfo)
     super 
 
-    #candidates
-    @c_anderson = Candidate.new("Anderson")
-    @c_brown = Candidate.new("Brown")
-    @c_chen = Candidate.new("Chen")
-    @c_davis = Candidate.new("Davis")
-    @c_eastman = Candidate.new("Eastman")
-    @c_ford = Candidate.new("Ford")
-    @c_garcia = Candidate.new("Garcia")
-    @c_hassan = Candidate.new("Hassan")
+    #initialize candidates
+    @candidates = []
 
-    #programs
-    @p_mercy = Program.new("Mercy", 2)
-    @p_city = Program.new("City", 2)
-    @p_general = Program.new("General", 2)
-    @p_state = Program.new("State", 2)
+    candinfo.each_index do |x|
+      @candidates[x] = Candidate.new(candinfo[x][0])
+    end #for candidates
 
-    #candidate ranklists
-    @c_anderson.ranklist = [@p_city]
-    @c_brown.ranklist = [@p_city, @p_mercy]
-    @c_chen.ranklist = [@p_city, @p_mercy]
-    @c_davis.ranklist = [@p_mercy, @p_city, @p_general, @p_state]
-    @c_eastman.ranklist = [@p_city, @p_mercy, @p_state, @p_general]
-    @c_ford.ranklist = [@p_city, @p_general, @p_mercy, @p_state]
-    @c_garcia.ranklist = [@p_city, @p_mercy, @p_state, @p_general]
-    @c_hassan.ranklist = [@p_state, @p_city, @p_mercy, @p_general]
 
-    #program ranklists
-    @p_mercy.ranklist = [@c_chen, @c_garcia]
-    @p_city.ranklist = [@c_garcia, @c_hassan, @c_eastman, @c_anderson, @c_brown, @c_chen, @c_davis, @c_ford]
-    @p_general.ranklist = [@c_brown, @c_eastman, @c_hassan, @c_anderson, @c_chen, @c_davis, @c_garcia]
-    @p_state.ranklist = [@c_brown, @c_eastman, @c_anderson, @c_chen, @c_hassan, @c_ford, @c_davis, @c_garcia]
+    #initialize programs
+    @programs = []
+
+    proginfo.each_index do |x|
+      @programs[x] = Program.new(proginfo[x][0], proginfo[x][1])
+    end #do programs
+
+
+    #initialize candidates' ranklists
+    candinfo.each_index do |x|
+
+      candinfo[x][1].each_index do |y|
+
+        ObjectSpace.each_object.select{|obj| obj.class == Program && obj.name == candinfo[x][1][y]}.each do |prog|
+          @candidates[x].ranklist.push(prog)
+          break
+        end #each_object Program
+
+      end #do
+      
+    end #candidates do
+
+
+    #initialize programs' ranklists
+    proginfo.each_index do |x|
+
+      proginfo[x][2].each_index do |y|
+
+        ObjectSpace.each_object.select{|obj| obj.class == Candidate && obj.name == proginfo[x][2][y]}.each do |cand|
+          @programs[x].ranklist.push(cand)
+          break
+        end #each_object Candidate
+
+      end #do   
+    end #candidates do
+
   end # initialize
 
 
 
   class Candidate
-    attr_accessor :name, :current_rank_counter, :ranklist, :ranklistcounter, :tentmatch
+    attr_accessor :name, :current_rank_counter, :ranklist, :tentmatch
 
 
     def initialize(name)
@@ -55,8 +67,7 @@ class Match
       # go through rank list starting from the beginning
       @ranklist.each_with_index.map do |prog, i|
 
-        @ranklistcounter = i
-        puts "\n#{name} seeking match at #{prog.name}."
+        puts "\n#{@name} seeking match at #{prog.name}."
 
         # run Match
         @matchresult = prog.TryMatch(self)
@@ -77,7 +88,7 @@ class Match
 
         elsif @matchresult == false
           puts "#{name} is not matched at #{prog.name}."
-          @tentmatch = "Unmatched"
+          #@tentmatch = nil
 
         end #if result of matchresult
 
@@ -101,6 +112,7 @@ class Match
       @name = name
       @spots = spots
       @tentmatcharray = []
+      @ranklist = []
     end #initialize
 
 
@@ -179,44 +191,6 @@ class Match
 
 
 
-
-
-  def PrintDetails
-
-    # Go through each Program
-    ObjectSpace.each_object.select{|obj| obj.class == Program}.each do |prog|
-
-      candlist = []
-
-      # Go through each Candidate
-      ObjectSpace.each_object.select{|obj| obj.class == Candidate}.each do |cand|
-
-        # if the Candidate has ranked the Program AND the Program has ranked the Candidate
-        if cand.ranklist.index(prog).nil? == false && prog.ranklist.index(cand).nil? == false
-
-          # Add the candidate to the Program's Candidate array
-          candlist.push(cand)
-        end # if
-
-      end #each Candidate
-
-      # print each Program's candidate list, ordered by Candidates' ranking of the program
-      print "#{prog.name}:  "
-
-      candlist.sort!{ |a,b| prog.ranklist.index(a) <=> prog.ranklist.index(b) }
-
-      candlist.each_with_index.map { |v, index| print "#{prog.ranklist.index(v) + 1}.#{v.name}(#{v.ranklist.index(prog) + 1})  " } 
-      print "\n"
-
-    end #each Program
-
-  end # PrintDetails
-
-
-
-
-
-
   def RunMatch
 
     # Go through each Candidate
@@ -236,7 +210,7 @@ class Match
 
     # Go through each Candidate
 
-    puts "\n\nFINAL MATCHLIST\n********************"
+    puts "\n\nFINAL PROGRAM MATCHLIST\n------------------------------"
 
     ObjectSpace.each_object.select{|obj| obj.class == Program}.each do |prog|
 
@@ -245,9 +219,17 @@ class Match
       print "\n"
     end # each Program
 
+
+    puts "\n\nFINAL CANDIDATE RESULTS\n------------------------------"
+
+    ObjectSpace.each_object.select{|obj| obj.class == Candidate}.each do |cand|
+
+      print "#{cand.name}: #{cand.tentmatch == nil ? "Unmatched" : cand.tentmatch.name}"
+      print "\n"
+    end # each Candidate
+
+
   end # PrintResult
-
-
 
 
 end #class Match
@@ -256,7 +238,29 @@ end #class Match
 
 
 
-a = Match.new
+
+candinfo = [   
+  ["Anderson", ["City"]],
+  ["Brown", ["City", "Mercy"]],
+  ["Chen", ["City", "Mercy"]],
+  ["Davis", ["Mercy", "City", "General", "State"]],
+  ["Eastman", ["City", "Mercy", "State", "General"]],
+  ["Ford", ["City", "General", "Mercy", "State"]],
+  ["Garcia", ["City", "Mercy", "State", "General"]],
+  ["Hassan", ["State", "City", "Mercy", "General"]]
+]
+
+proginfo = [
+  ["Mercy", 2, ["Chen", "Garcia"]], 
+  ["City", 2, ["Garcia", "Hassan", "Eastman", "Anderson", "Brown", "Chen", "Davis", "Ford"]], 
+  ["General", 2, ["Brown", "Eastman", "Hassan", "Anderson", "Chen", "Davis", "Garcia"]], 
+  ["State", 2, ["Brown", "Eastman", "Anderson", "Chen", "Hassan", "Ford", "Davis", "Garcia"]]
+]
+
+
+
+a = Match.new(candinfo, proginfo) 
 
 a.RunMatch
+
 
